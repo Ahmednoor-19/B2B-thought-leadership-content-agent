@@ -1,0 +1,326 @@
+{
+  "name": "B2B Content Agent \u2014 WF2 Breaking-News Monitor",
+  "flow": [
+    {
+      "id": 1,
+      "module": "rss:TriggerNewArticles",
+      "version": 1,
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=leadership+OR+workplace+performance+OR+employee+burnout&hl=en-GB&gl=GB&ceid=GB:en",
+        "maxResults": 5
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 2,
+      "module": "datastore:GetRecord",
+      "version": 1,
+      "parameters": {
+        "__IMTDS__": "REPLACE_DATASTORE_ID"
+      },
+      "mapper": {
+        "key": "{{md5(1.url)}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTDS__",
+            "type": "datastore",
+            "label": "Data store",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "module": "datastore:AddReplaceRecord",
+      "version": 1,
+      "parameters": {
+        "__IMTDS__": "REPLACE_DATASTORE_ID"
+      },
+      "filter": {
+        "name": "Only if new (not seen before)",
+        "conditions": [
+          [
+            {
+              "a": "{{2.key}}",
+              "o": "notexist"
+            }
+          ]
+        ]
+      },
+      "mapper": {
+        "key": "{{md5(1.url)}}",
+        "data": {
+          "seen_at": "{{now}}",
+          "title": "{{1.title}}"
+        }
+      },
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTDS__",
+            "type": "datastore",
+            "label": "Data store",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "module": "google-docs:getADocumentContent",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": ""
+      },
+      "mapper": {
+        "docId": "REPLACE_SYSTEM_PROMPT_DOC_ID"
+      },
+      "metadata": {
+        "designer": {
+          "x": 900,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "module": "google-docs:getADocumentContent",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": ""
+      },
+      "mapper": {
+        "docId": "REPLACE_BRAND_DOC_ID"
+      },
+      "metadata": {
+        "designer": {
+          "x": 1200,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {},
+      "mapper": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "method": "post",
+        "headers": [
+          {
+            "name": "x-goog-api-key",
+            "value": "REPLACE_WITH_GEMINI_API_KEY"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "parseResponse": true,
+        "data": "{\"system_instruction\": {\"parts\": [{\"text\": \"You are a strict relevance classifier for a B2B neuro-performance consultant (audience: Heads of People, VPs of Sales, founders of 20-500 person teams). Judge MEANING, not keywords. Return ONLY strict JSON: {\\\"is_relevant\\\": true|false, \\\"confidence\\\": 0.0-1.0, \\\"reason\\\": \\\"one sentence\\\"}.\"}]}, \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"MODE: breaking_news_relevance\\n\\n=== ITEM ===\\nTITLE: {{escapeJSON(1.title)}}\\nSUMMARY: {{escapeJSON(1.summary)}}\"}]}], \"generationConfig\": {\"responseMimeType\": \"application/json\", \"responseSchema\": {\"type\": \"object\", \"properties\": {\"is_relevant\": {\"type\": \"boolean\"}, \"confidence\": {\"type\": \"number\"}, \"reason\": {\"type\": \"string\"}}, \"required\": [\"is_relevant\", \"confidence\", \"reason\"]}}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 1500,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 7,
+      "module": "json:ParseJSON",
+      "version": 1,
+      "parameters": {
+        "type": ""
+      },
+      "mapper": {
+        "json": "{{6.data.candidates[].content.parts[].text}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 1800,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 8,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {},
+      "filter": {
+        "name": "Only if relevant & confident",
+        "conditions": [
+          [
+            {
+              "a": "{{7.is_relevant}}",
+              "b": "true",
+              "o": "text:equal"
+            },
+            {
+              "a": "{{7.confidence}}",
+              "b": "0.6",
+              "o": "number:greaterorequal"
+            }
+          ]
+        ]
+      },
+      "mapper": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+        "method": "post",
+        "headers": [
+          {
+            "name": "x-goog-api-key",
+            "value": "REPLACE_WITH_GEMINI_API_KEY"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "parseResponse": true,
+        "data": "{\"system_instruction\": {\"parts\": [{\"text\": \"{{escapeJSON(4.content)}}\\n\\n=== BRAND & TONE GUIDELINES ===\\n{{escapeJSON(5.content)}}\"}]}, \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"DRAFT TYPE: breaking_news\\nCURRENT TIME (ISO): {{formatDate(now; \\\"YYYY-MM-DDTHH:mm:ssZ\\\")}}\\n\\n=== RESEARCH TEXT ===\\nTITLE: {{escapeJSON(1.title)}}\\nSUMMARY: {{escapeJSON(1.summary)}}\\nURL: {{1.url}}\\n\\nWrite one timely on-brand reaction and return ONLY the OUTPUT CONTRACT JSON. Put the URL in source_urls.\"}]}], \"generationConfig\": {\"responseMimeType\": \"application/json\", \"responseSchema\": {\"type\": \"object\", \"properties\": {\"draft_type\": {\"type\": \"string\", \"enum\": [\"scheduled_post\", \"breaking_news\", \"comment\", \"speaker_pitch\"]}, \"hook_text\": {\"type\": \"string\"}, \"post_body\": {\"type\": \"string\"}, \"source_urls\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"confidence_note\": {\"type\": \"string\"}, \"target_profile_or_event\": {\"type\": \"string\", \"nullable\": true}, \"generated_at\": {\"type\": \"string\"}}, \"required\": [\"draft_type\", \"hook_text\", \"post_body\", \"source_urls\", \"confidence_note\", \"generated_at\"]}}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 2100,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 9,
+      "module": "json:ParseJSON",
+      "version": 1,
+      "parameters": {
+        "type": ""
+      },
+      "mapper": {
+        "json": "{{8.data.candidates[].content.parts[].text}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 2400,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 10,
+      "module": "google-docs:createADocument",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": ""
+      },
+      "mapper": {
+        "name": "Draft \u2014 breaking_news \u2014 {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+        "content": "HOOK:\n{{9.hook_text}}\n\nBODY:\n{{9.post_body}}\n\nSOURCES:\n{{join(9.source_urls; \", \")}}\n\nVERIFY BEFORE POSTING:\n{{9.confidence_note}}",
+        "destination": "folder",
+        "folderId": "REPLACE_DRIVE_FOLDER_ID"
+      },
+      "metadata": {
+        "designer": {
+          "x": 2700,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "module": "google-email:ActionSendEmail",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": ""
+      },
+      "mapper": {
+        "to": [
+          "REPLACE_YOUR_EMAIL"
+        ],
+        "subject": "Breaking-news draft: {{9.hook_text}}",
+        "html": "A timely draft is ready.<br><br><b>Why flagged:</b> {{7.reason}} (confidence {{7.confidence}})<br><br>Open it:<br>https://docs.google.com/document/d/{{10.id}}/edit<br><br>Verify before posting: {{9.confidence_note}}",
+        "attachments": []
+      },
+      "metadata": {
+        "designer": {
+          "x": 3000,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "eu1.make.com"
+  }
+}

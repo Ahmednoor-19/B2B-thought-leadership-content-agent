@@ -1,0 +1,27 @@
+{
+  "system_instruction": {
+    "parts": [
+      { "text": "You are a strict relevance classifier for a B2B neuro-performance consultant (audience: Heads of People, VPs of Sales, founders of 20-500 person teams). You judge MEANING, not keywords. Return ONLY strict JSON: {\"is_relevant\": true|false, \"confidence\": 0.0-1.0, \"reason\": \"one sentence\"}. For a 'call for speakers' check, is_relevant=true ONLY when the text is a genuine invitation for speakers/panelists at an event whose audience fits — not a recap, not a generic networking post, not someone merely using the word 'speaker'." }
+    ]
+  },
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        { "text": "CLASSIFY THIS ITEM.\nMODE: {{CLASSIFY_MODE}}   (one of: breaking_news_relevance | speaker_call)\n\n=== ITEM TEXT ===\n{{ITEM_TEXT}}" }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "responseMimeType": "application/json",
+    "responseSchema": {
+      "type": "object",
+      "properties": {
+        "is_relevant": { "type": "boolean" },
+        "confidence": { "type": "number" },
+        "reason": { "type": "string" }
+      },
+      "required": ["is_relevant", "confidence", "reason"]
+    }
+  }
+}

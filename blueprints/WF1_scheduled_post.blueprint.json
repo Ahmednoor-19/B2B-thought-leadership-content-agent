@@ -1,0 +1,120 @@
+{
+  "name": "B2B Content Agent — WF1 Scheduled Post",
+  "flow": [
+    {
+      "id": 1,
+      "module": "google-docs:getADocumentContent",
+      "version": 1,
+      "parameters": { "__IMTCONN__": "" },
+      "mapper": { "docId": "REPLACE_SYSTEM_PROMPT_DOC_ID" },
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "parameters": [ { "name": "__IMTCONN__", "type": "account:google", "label": "Connection", "required": true } ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "google-docs:getADocumentContent",
+      "version": 1,
+      "parameters": { "__IMTCONN__": "" },
+      "mapper": { "docId": "REPLACE_BRAND_DOC_ID" },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 },
+        "parameters": [ { "name": "__IMTCONN__", "type": "account:google", "label": "Connection", "required": true } ]
+      }
+    },
+    {
+      "id": 3,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {},
+      "mapper": {
+        "url": "https://news.google.com/rss/search?q=team+performance+OR+leadership+OR+workplace+burnout&hl=en-GB&gl=GB&ceid=GB:en",
+        "method": "get",
+        "headers": [],
+        "qs": [],
+        "parseResponse": false,
+        "bodyType": "",
+        "ca": ""
+      },
+      "metadata": { "designer": { "x": 600, "y": 0 } }
+    },
+    {
+      "id": 4,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {},
+      "mapper": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+        "method": "post",
+        "headers": [
+          { "name": "x-goog-api-key", "value": "REPLACE_WITH_GEMINI_API_KEY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "parseResponse": true,
+        "data": "{\"system_instruction\":{\"parts\":[{\"text\":\"{{1.content}}\\n\\n=== BRAND & TONE GUIDELINES ===\\n{{2.content}}\"}]},\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"DRAFT TYPE: scheduled_post\\nCURRENT TIME (ISO): {{formatDate(now; \\\"YYYY-MM-DDTHH:mm:ssZ\\\")}}\\n\\n=== RESEARCH TEXT (pick ONE story; ground the post in it; do not invent beyond it) ===\\n{{3.data}}\\n\\nWrite one on-brand draft and return ONLY the OUTPUT CONTRACT JSON.\"}]}],\"generationConfig\":{\"responseMimeType\":\"application/json\"}}"
+      },
+      "metadata": { "designer": { "x": 900, "y": 0 } }
+    },
+    {
+      "id": 5,
+      "module": "json:ParseJSON",
+      "version": 1,
+      "parameters": { "type": "" },
+      "mapper": { "json": "{{4.data.candidates[].content.parts[].text}}" },
+      "metadata": { "designer": { "x": 1200, "y": 0 } }
+    },
+    {
+      "id": 6,
+      "module": "google-docs:createADocument",
+      "version": 1,
+      "parameters": { "__IMTCONN__": "" },
+      "mapper": {
+        "name": "Draft — scheduled_post — {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+        "content": "HOOK:\n{{5.hook_text}}\n\nBODY:\n{{5.post_body}}\n\nSOURCES:\n{{join(5.source_urls; \", \")}}\n\nVERIFY BEFORE POSTING:\n{{5.confidence_note}}",
+        "destination": "folder",
+        "folderId": "REPLACE_DRIVE_FOLDER_ID"
+      },
+      "metadata": {
+        "designer": { "x": 1500, "y": 0 },
+        "parameters": [ { "name": "__IMTCONN__", "type": "account:google", "label": "Connection", "required": true } ]
+      }
+    },
+    {
+      "id": 7,
+      "module": "google-email:ActionSendEmail",
+      "version": 1,
+      "parameters": { "__IMTCONN__": "" },
+      "mapper": {
+        "to": [ "REPLACE_YOUR_EMAIL" ],
+        "subject": "New draft ready: {{5.draft_type}} — {{5.hook_text}}",
+        "html": "Your scheduled draft is ready to review.<br><br><b>Hook:</b> {{5.hook_text}}<br><br>Open it in Drive:<br>https://docs.google.com/document/d/{{6.id}}/edit<br><br>Verify before posting: {{5.confidence_note}}",
+        "attachments": []
+      },
+      "metadata": {
+        "designer": { "x": 1800, "y": 0 },
+        "parameters": [ { "name": "__IMTCONN__", "type": "account:google", "label": "Connection", "required": true } ]
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  }
+}

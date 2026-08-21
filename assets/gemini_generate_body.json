@@ -1,0 +1,31 @@
+{
+  "system_instruction": {
+    "parts": [
+      { "text": "{{SYSTEM_PROMPT_TEXT}}\n\n=== BRAND & TONE GUIDELINES ===\n{{BRAND_DOC_TEXT}}" }
+    ]
+  },
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        { "text": "DRAFT TYPE: {{DRAFT_TYPE}}\nCURRENT TIME (ISO): {{NOW_ISO}}\nTARGET (if any): {{TARGET_PROFILE_OR_EVENT}}\n\n=== RESEARCH TEXT (ground the post in this; do not invent beyond it) ===\n{{RESEARCH_TEXT}}\n\nWrite one on-brand draft and return ONLY the JSON object from the OUTPUT CONTRACT. Fill generated_at with the CURRENT TIME above." }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "responseMimeType": "application/json",
+    "responseSchema": {
+      "type": "object",
+      "properties": {
+        "draft_type": { "type": "string", "enum": ["scheduled_post", "breaking_news", "comment", "speaker_pitch"] },
+        "hook_text": { "type": "string" },
+        "post_body": { "type": "string" },
+        "source_urls": { "type": "array", "items": { "type": "string" } },
+        "confidence_note": { "type": "string" },
+        "target_profile_or_event": { "type": "string", "nullable": true },
+        "generated_at": { "type": "string" }
+      },
+      "required": ["draft_type", "hook_text", "post_body", "source_urls", "confidence_note", "generated_at"]
+    }
+  }
+}

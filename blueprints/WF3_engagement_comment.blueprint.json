@@ -1,0 +1,204 @@
+{
+  "name": "B2B Content Agent \u2014 WF3 Engagement Comment",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "__IMTHOOK__": "",
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTHOOK__",
+            "type": "hook:gateway-webhook",
+            "label": "Webhook",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "google-docs:getADocumentContent",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": ""
+      },
+      "mapper": {
+        "docId": "REPLACE_SYSTEM_PROMPT_DOC_ID"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "module": "google-docs:getADocumentContent",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": ""
+      },
+      "mapper": {
+        "docId": "REPLACE_BRAND_DOC_ID"
+      },
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {},
+      "mapper": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+        "method": "post",
+        "headers": [
+          {
+            "name": "x-goog-api-key",
+            "value": "REPLACE_WITH_GEMINI_API_KEY"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "parseResponse": true,
+        "data": "{\"system_instruction\": {\"parts\": [{\"text\": \"{{escapeJSON(2.content)}}\\n\\n=== BRAND & TONE GUIDELINES ===\\n{{escapeJSON(3.content)}}\"}]}, \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"DRAFT TYPE: comment\\nCURRENT TIME (ISO): {{formatDate(now; \\\"YYYY-MM-DDTHH:mm:ssZ\\\")}}\\nTARGET (post author): {{escapeJSON(1.author)}}\\n\\n=== ORIGINAL POST TO COMMENT ON ===\\n{{escapeJSON(1.post_text)}}\\n\\nWrite one specific, non-salesy comment and return ONLY the OUTPUT CONTRACT JSON. Set target_profile_or_event to the author. Put the post URL in source_urls: {{escapeJSON(1.post_url)}}.\"}]}], \"generationConfig\": {\"responseMimeType\": \"application/json\", \"responseSchema\": {\"type\": \"object\", \"properties\": {\"draft_type\": {\"type\": \"string\", \"enum\": [\"scheduled_post\", \"breaking_news\", \"comment\", \"speaker_pitch\"]}, \"hook_text\": {\"type\": \"string\"}, \"post_body\": {\"type\": \"string\"}, \"source_urls\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"confidence_note\": {\"type\": \"string\"}, \"target_profile_or_event\": {\"type\": \"string\", \"nullable\": true}, \"generated_at\": {\"type\": \"string\"}}, \"required\": [\"draft_type\", \"hook_text\", \"post_body\", \"source_urls\", \"confidence_note\", \"generated_at\"]}}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 900,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 5,
+      "module": "json:ParseJSON",
+      "version": 1,
+      "parameters": {
+        "type": ""
+      },
+      "mapper": {
+        "json": "{{4.data.candidates[].content.parts[].text}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 1200,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 6,
+      "module": "google-docs:createADocument",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": ""
+      },
+      "mapper": {
+        "name": "Draft \u2014 comment on {{1.author}} \u2014 {{formatDate(now; \"YYYY-MM-DD HH:mm\")}}",
+        "content": "COMMENT DRAFT:\n{{5.post_body}}\n\nIN REPLY TO: {{1.author}}\nORIGINAL: {{1.post_url}}\n\nVERIFY BEFORE POSTING:\n{{5.confidence_note}}",
+        "destination": "folder",
+        "folderId": "REPLACE_DRIVE_FOLDER_ID"
+      },
+      "metadata": {
+        "designer": {
+          "x": 1500,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "module": "google-email:ActionSendEmail",
+      "version": 1,
+      "parameters": {
+        "__IMTCONN__": ""
+      },
+      "mapper": {
+        "to": [
+          "REPLACE_YOUR_EMAIL"
+        ],
+        "subject": "Comment draft ready \u2014 re: {{1.author}}",
+        "html": "A comment draft is ready to review (nothing was posted).<br><br>Open it:<br>https://docs.google.com/document/d/{{6.id}}/edit",
+        "attachments": []
+      },
+      "metadata": {
+        "designer": {
+          "x": 1800,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:google",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "eu1.make.com"
+  }
+}
