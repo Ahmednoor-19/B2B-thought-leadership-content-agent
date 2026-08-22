@@ -15,6 +15,19 @@ A human-in-the-loop content automation system: four Make.com workflows that rese
 
 Full write-up of the architecture, design decisions, and what building it surfaced: **[CASE_STUDY.md](CASE_STUDY.md)**
 
+## Workflows in action
+
+<table>
+<tr>
+<td align="center"><img src="WF1 Scheduled Post.png" width="380"><br><b>WF1 — Scheduled post</b></td>
+<td align="center"><img src="WF2 Breaking-News Monitor.png" width="380"><br><b>WF2 — Breaking-news monitor</b></td>
+</tr>
+<tr>
+<td align="center"><img src="WF3 Engagement Comment.png" width="380"><br><b>WF3 — Engagement comment</b></td>
+<td align="center"><img src="WF4 Speaker Radar.png" width="380"><br><b>WF4 — Speaker radar</b></td>
+</tr>
+</table>
+
 ## Repo structure
 
 ```
@@ -50,16 +63,3 @@ Make.com · Gemini API · Claude API (documented alternative) · Google Drive / 
 ---
 
 *The persona in `assets/system_prompt.txt` (a neuro-performance consultant) is a labeled portfolio placeholder. Swapping in a real client's brand voice is a two-file edit — see CASE_STUDY.md.*
-
-## Workflows in action
-
-<table>
-<tr>
-<td align="center"><img src="wf1-scheduled-post.png" width="380"><br><b>WF1 — Scheduled post</b></td>
-<td align="center"><img src="wf2-breaking-news-monitor.png" width="380"><br><b>WF2 — Breaking-news monitor</b></td>
-</tr>
-<tr>
-<td align="center"><img src="wf3-engagement-comment.png" width="380"><br><b>WF3 — Engagement comment</b></td>
-<td align="center"><img src="wf4-speaker-radar.png" width="380"><br><b>WF4 — Speaker radar</b></td>
-</tr>
-</table>
