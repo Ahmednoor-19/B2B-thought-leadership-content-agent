@@ -22,7 +22,7 @@ Full write-up of the architecture, design decisions, and what building it surfac
 ├── CASE_STUDY.md          # architecture, engineering decisions, lessons learned
 ├── diagrams/
 │   └── architecture.svg   # system architecture diagram
-├── blueprints/            # Make.com scenario exports, importable as-is
+├── workflows/            # Make.com scenario exports, importable as-is
 │   ├── WF1_scheduled_post.blueprint.json
 │   ├── WF2_breaking_news_monitor.blueprint.json
 │   ├── WF3_engagement_comment.blueprint.json
@@ -50,3 +50,16 @@ Make.com · Gemini API · Claude API (documented alternative) · Google Drive / 
 ---
 
 *The persona in `assets/system_prompt.txt` (a neuro-performance consultant) is a labeled portfolio placeholder. Swapping in a real client's brand voice is a two-file edit — see CASE_STUDY.md.*
+
+## Workflows in action
+
+<table>
+<tr>
+<td align="center"><img src="wf1-scheduled-post.png" width="380"><br><b>WF1 — Scheduled post</b></td>
+<td align="center"><img src="wf2-breaking-news-monitor.png" width="380"><br><b>WF2 — Breaking-news monitor</b></td>
+</tr>
+<tr>
+<td align="center"><img src="wf3-engagement-comment.png" width="380"><br><b>WF3 — Engagement comment</b></td>
+<td align="center"><img src="wf4-speaker-radar.png" width="380"><br><b>WF4 — Speaker radar</b></td>
+</tr>
+</table>
