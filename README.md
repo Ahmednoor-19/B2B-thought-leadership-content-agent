@@ -58,7 +58,7 @@ Full write-up of the architecture, design decisions, and what building it surfac
 
 ## Stack
 
-Make.com · Gemini API · Claude API (documented alternative) · Google Drive / Docs / Gmail · JSON Schema
+Make.com · Gemini API · Google Drive / Docs / Gmail · JSON Schema
 
 ---
 
